@@ -1,3 +1,5 @@
+# These constants are in glibc: https://github.com/bminor/glibc/blob/969d7cf89966d55fbf0732ae7bc0949a970c837d/elf/elf.h#L357
+
 # e_ident[EIBCLASS]
 const ELFCLASSNONE = 0 #Invalid class
 const ELFCLASS32 = 1 #32-bit objects
