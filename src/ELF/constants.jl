@@ -220,6 +220,25 @@ end
     const EM_BA2  = 202 #Beyond BA2 CPU architecture
     const EM_XCORE    = 203 #XMOS xCORE processor family
     const EM_MCHP_PIC = 204 #Microchip 8-bit PIC(r) family
+    #205-209 Reserved
+    const EM_KM32        = 210 #KM211 KM32
+    const EM_KMX32       = 211 #KM211 KMX32
+    const EM_EMX16       = 212 #KM211 KMX16
+    const EM_EMX8        = 213 #KM211 KMX8
+    const EM_KVARC       = 214 #KM211 KVARC
+    const EM_CDP         = 215 #Paneve CDP
+    const EM_COGE        = 216 #Cognitive Smart Memory Processor
+    const EM_COOL        = 217 #Bluechip CoolEngine
+    const EM_NORC        = 218 #Nanoradio Optimized RISC
+    const EM_CSR_KALIMBA = 219 #CSR Kalimba
+    const EM_Z80         = 220 #Zilog Z80
+    const EM_VISIUM      = 221 #Controls and Data Services VISIUMcore
+    const EM_FT32        = 222 #FTDI Chip FT32
+    const EM_MOXIE       = 223 #Moxie processor
+    const EM_AMDGPU      = 224 #AMD GPU
+    #225-242 Reserved
+    const EM_RISCV       = 243 #RISC-V
+    const EM_BPF         = 247 #Linux BPF -- in-kernel virtual machine
 end
 
 # Special Section Indices

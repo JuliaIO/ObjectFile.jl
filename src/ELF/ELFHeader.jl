@@ -67,6 +67,8 @@ function elf_machine_to_arch(machine::UInt16)
         return "aarch64"
     elseif machine ∈ (EM_PPC64,)
         return "ppc64le"
+    elseif machine ∈ (EM_RISCV,)
+        return "riscv64"
     end
 end
 
