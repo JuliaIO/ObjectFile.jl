@@ -24,6 +24,14 @@ end
     vn_next::UInt32
 end
 
+@io struct ELFVernAux{H <: ELFHandle}
+    vna_hash::UInt32
+    vna_flags::UInt16
+    vna_other::UInt16
+    vna_name::UInt32
+    vna_next::UInt32
+end
+
 struct ELFVersionEntry{H <: ELFHandle}
     ver_def::ELFVerDef{H}
     names::Vector{String}
@@ -62,4 +70,20 @@ function ELFVersionData(oh::H) where {H <: ELFHandle}
     end
     
     return version_defs
+end
+
+"""
+Hash function used to create vd_hash from vda_name, or vna_hash from vna_name
+"""
+function ELFHash(v::Vector{UInt8})
+    h = UInt32(0)
+    for b in v
+        h = (h << 4) + b
+        hi = h & 0xf0000000
+        if (hi != 0)
+            h ⊻= (hi >> 24)
+        end
+        h &= ~hi
+    end
+    return h
 end
