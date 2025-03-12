@@ -40,6 +40,7 @@ end
 function ELFVersionData(oh::H) where {H <: ELFHandle}
     s = findfirst(Sections(oh), ".gnu.version_d")
     strtab = StrTab(findfirst(Sections(oh), ".dynstr"))
+    (isnothing(s) || isnothing(strtab)) && return ELFVersionEntry[]
 
     # Queue oh up to the beginning of this section
     seek(oh, section_offset(s))
