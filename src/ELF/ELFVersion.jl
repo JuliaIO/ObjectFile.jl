@@ -1,4 +1,4 @@
-export ELFVersionData
+export ELFVersionData, ELFVersionNeededData, ELFHash
 
 # Special ELF version data structures
 @io struct ELFVerDef{H <: ELFHandle}
@@ -37,6 +37,20 @@ struct ELFVersionEntry{H <: ELFHandle}
     names::Vector{String}
 end
 
+struct ELFVersionNeededEntry{H <: ELFHandle}
+    ver_need::ELFVerNeed{H}
+    auxes::Vector{ELFVernAux}
+    names::Vector{String}
+end
+
+"""
+Collect all version definitions from .gnu.version_d.  This section contains a
+sequence of verdef structs `vd`, each of which owns exactly `vd.vd_cnt` verdaux
+structs which we convert to names.  The first name is generally the only
+important one to the given `vd`; it is the version being defined, and
+corresponds to `vd.vd_hash`.  If present, a second verdaux usually notes the
+parent version (e.g. `names = ["GLIBCXX_3.4.7", "GLIBCXX_3.4.6"]`)
+"""
 function ELFVersionData(oh::H) where {H <: ELFHandle}
     s = findfirst(Sections(oh), ".gnu.version_d")
     strtab = StrTab(findfirst(Sections(oh), ".dynstr"))
@@ -74,11 +88,53 @@ function ELFVersionData(oh::H) where {H <: ELFHandle}
 end
 
 """
-Hash function used to create vd_hash from vda_name, or vna_hash from vna_name
+Collect all version requirements from .gnu.version_r.  This section is
+structurally similar to the version definition section, but the primary
+"verneed" struct corresponds to one shared library, and the auxiliary struct
+corresponds to a version.
+"""
+function ELFVersionNeededData(oh::H) where {H <: ELFHandle}
+    s = findfirst(Sections(oh), ".gnu.version_r")
+    strtab = StrTab(findfirst(Sections(oh), ".dynstr"))
+    (isnothing(s) || isnothing(strtab)) && return ELFVersionNeededEntry[]
+
+    seek(oh, section_offset(s))
+    verneeds = ELFVersionNeededEntry[]
+    while true
+        vn_pos = position(oh)
+        vn = unpack(oh, ELFVerNeed{H})
+        auxes = ELFVernAux[]
+        names = String[]
+        aux_offset = 0
+        for aux_idx in 1:vn.vn_cnt
+            seek(oh, vn_pos + vn.vn_aux + aux_offset)
+            aux = unpack(oh, ELFVernAux{H})
+            name = strtab_lookup(strtab, aux.vna_name)
+            push!(auxes, aux)
+            push!(names, name)
+            aux_offset += aux.vna_next
+        end
+        push!(verneeds, ELFVersionNeededEntry(vn, auxes, names))
+
+        if vn.vn_next == 0
+            break
+        end
+        seek(oh, vn_pos + vn.vn_next)
+    end
+
+    return verneeds
+end
+
+"""
+See https://en.wikipedia.org/wiki/PJW_hash_function
+
+Hash function used to create vd_hash from vda_name, or vna_hash from vna_name.
+Stops at the first null byte.
 """
 function ELFHash(v::Vector{UInt8})
     h = UInt32(0)
     for b in v
+        (b == 0) && break;
         h = (h << 4) + b
         hi = h & 0xf0000000
         if (hi != 0)
