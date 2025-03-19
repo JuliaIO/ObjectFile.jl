@@ -210,19 +210,48 @@ test_libfoo_and_fooifier("./win64/fooifier.exe", "./win64/libfoo.dll")
 
 # Ensure that ELF version stuff works
 @testset "ELF Version Info Parsing" begin
+    using ObjectFile.ELF
+
+    # Assuming the version structs in the file are correct, test that we read
+    # them correctly (and calculate hashes correctly).
+    function check_verdef(v::ELF.ELFVersionEntry)
+        @test v.ver_def.vd_version == 1
+        @test v.ver_def.vd_cnt == length(v.names)
+        if length(v.names) > 0
+            @test v.ver_def.vd_hash == ELFHash(Vector{UInt8}(v.names[1]))
+        end
+    end
+    function check_verneed(v::ELF.ELFVersionNeededEntry)
+        @test v.ver_need.vn_version == 1
+        @test v.ver_need.vn_cnt == length(v.auxes) == length(v.names)
+        for i in 1:length(v.names)
+            @test v.auxes[i].vna_hash == ELFHash(Vector{UInt8}(v.names[i]))
+        end
+    end
+
     libstdcxx_path = "./linux64/libstdc++.so.6"
 
     # Extract all pieces of `.gnu.version_d` from libstdc++.so, find the `GLIBCXX_*`
     # symbols, and use the maximum version of that to find the GLIBCXX ABI version number
-    version_symbols = readmeta(libstdcxx_path) do ohs
+    readmeta(libstdcxx_path) do ohs
         oh = only(ohs)
-        unique(vcat((x -> x.names).(ObjectFile.ELF.ELFVersionData(oh))...))
+        verdef_symbols = unique(vcat((x -> x.names).(ELFVersionData(oh))...))
+        verdef_symbols = filter(x -> startswith(x, "GLIBCXX_"), verdef_symbols)
+        max_version = maximum([VersionNumber(split(v, "_")[2]) for v in verdef_symbols])
+        @test max_version == v"3.4.25"
     end
-    version_symbols = filter(x -> startswith(x, "GLIBCXX_"), version_symbols)
-    max_version = maximum([VersionNumber(split(v, "_")[2]) for v in version_symbols])
-    @test max_version == v"3.4.25"
-end
 
+    for p in ["./linux32/fooifier", "./linux32/libfoo.so",
+              "./linux64/fooifier", "./linux64/libfoo.so",
+              "./linux64/libstdc++.so.6"]
+        readmeta(p) do ohs
+            oh = only(ohs)
+            foreach(check_verdef, ELFVersionData(oh))
+            foreach(check_verneed, ELFVersionNeededData(oh))
+        end
+    end
+
+end
 
 # Ensure that these tricksy win32 files work
 @testset "git win32 problems" begin
