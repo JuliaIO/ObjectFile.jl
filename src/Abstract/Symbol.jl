@@ -10,7 +10,7 @@ export Symbols,
 
 # Export SymtabEntry API
 export SymtabEntry,
-       deref, symbol_name, symbol_value, isundef, isglobal, islocal, isweak
+       deref, symbol_name, symbol_value, isundef, isglobal, islocal, isweak, symbol_section, symbol_offset
 
 # Export SymbolRef API
 export SymbolRef,
@@ -160,6 +160,19 @@ the string table pointing to this `SymtabEntry`'s name, e.g. "@strtab.123"
 Return the value of the given symbol
 """
 @mustimplement symbol_value(sym::SymtabEntry)
+
+"""
+    symbol_section(sym::SymtabEntry)
+Return the section that this symbol refers to
+"""
+@mustimplement symbol_section(sym::SymtabEntry)
+
+"""
+    symbol_offset(sym::SymtabEntry)
+Return the offset into the file that this symbol refers to.
+"""
+@mustimplement symbol_offset(sym::SymtabEntry)
+
 
 """
     isundef(sym::SymtabEntry)
