@@ -287,7 +287,7 @@ using Mmap
         syms_names = symbol_name.(syms)
         sym = syms[findfirst(syms_names .== mangle_symbol_name(obj, "dep_libs"))]
         offset = symbol_offset(sym)
-        filem = mmap(file)
+        filem = Mmap.mmap(file)
         data = String(filem[offset: (offset + 255)])
         @test contains(data, "libjulia-internal")
         @test contains(data, "libjulia-codegen")
