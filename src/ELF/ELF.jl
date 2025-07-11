@@ -17,7 +17,7 @@ import ObjectFile: DynamicLink, DynamicLinks, RPath, ObjectHandle, Section, Sect
                    findfirst, deref, section_name, section_size,
                    section_offset, section_address, section_number, segment_name, segment_offset,
                    segment_file_size, segment_memory_size, segment_address, strtab_lookup,
-                   symbol_name, symbol_value, isundef, isglobal, islocal, isweak, symbol_number
+                   symbol_name, symbol_value, isundef, isglobal, islocal, isweak, symbol_number, symbol_section, symbol_offset
 # Load in imported C #define constants
 include("constants.jl")
 

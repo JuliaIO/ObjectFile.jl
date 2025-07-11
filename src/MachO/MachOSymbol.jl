@@ -25,7 +25,6 @@ end
 symbol_name(sym::MachOSymtabEntry) = string("strtab@", sym.n_strx)
 symbol_value(sym::MachOSymtabEntry) = sym.n_value
 symbol_type(sym::MachOSymtabEntry) = sym.n_type
-symbol_section(sym::MachOSymtabEntry) = sym.n_sect
 symbol_description(sym::MachOSymtabEntry) = sym.n_desc
 
 function isglobal(sym::MachOSymtabEntry)
@@ -39,7 +38,7 @@ function isweak(sym::MachOSymtabEntry)
 end
 function isundef(sym::MachOSymtabEntry)
     return (symbol_type(sym) == N_UNDF) ||
-           (isglobal(sym) && symbol_section(sym) == NO_SECT)
+           (isglobal(sym) && sym.n_sect == NO_SECT)
 end
 
 
@@ -115,6 +114,23 @@ end
 deref(sym::MachOSymbolRef) = sym.entry
 Symbols(sym::MachOSymbolRef) = sym.syms
 symbol_number(sym::MachOSymbolRef) = sym.idx
+
+function symbol_section(sym::MachOSymbolRef)
+    # MachO uses 0 to indicate no section, so we use NO_SECT
+    if deref(sym).n_sect == 0
+        return NO_SECT
+    end
+    return Sections(handle(sym))[deref(sym).n_sect]
+end
+
 function symbol_name(sym::MachOSymbolRef)
     return strtab_lookup(StrTab(Symbols(sym)), sym.entry.n_strx)
 end
+
+function symbol_offset(sym::MachOSymbolRef)
+    addr = symbol_value(sym)
+    sect = symbol_section(sym)
+    virtual_offset =  section_address(sect) - section_offset(sect)
+    return addr - virtual_offset
+end
+

@@ -27,7 +27,7 @@ function Symbols(oh::H) where {H <: ELFHandle}
     if !isempty(dyn_sections)
         return ELFSymbols(first(dyn_sections))
     end
-    
+
     dyn_sections = findall(sections, ".dynsym")
     if !isempty(dyn_sections)
         return ELFSymbols(first(dyn_sections))
@@ -175,4 +175,11 @@ function symbol_value(sym::ELFSymbolRef)
 
     # Return our ill-gotten goods
     return value
+end
+
+function symbol_offset(sym::ELFSymbolRef)
+    addr = symbol_value(sym)
+    sect = symbol_section(sym)
+    virtual_offset =  section_address(sect) - section_offset(sect)
+    return addr - virtual_offset
 end

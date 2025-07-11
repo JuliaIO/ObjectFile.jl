@@ -80,7 +80,6 @@ function symbol_name(sym::COFFSymtabEntry)
 end
 
 symbol_value(sym::COFFSymtabEntry) = sym.Value
-symbol_section(sym::COFFSymtabEntry) = sym.SectionNumber
 symbol_type(sym::COFFSymtabEntry) = sym.Type
 function isundef(sym::COFFSymtabEntry)
     sym.StorageClass in (
@@ -112,6 +111,7 @@ end
 deref(sym::COFFSymbolRef) = sym.entry
 Symbols(sym::COFFSymbolRef) = sym.syms
 symbol_number(sym::COFFSymbolRef) = sym.idx
+symbol_section(sym::COFFSymbolRef) = Sections(handle(sym))[deref(sym).SectionNumber]
 @derefmethod symbol_type(sym::COFFSymbolRef)
 function symbol_name(sym::COFFSymbolRef)
     # COFF Symbols set the first four bytes of the name to zero to signify a
@@ -127,6 +127,10 @@ function symbol_name(sym::COFFSymbolRef)
     return unsafe_string(name)
 end
 
+function symbol_offset(sym::COFFSymbolRef)
+    # Return the offset into the file that this symbol refers to
+    return symbol_value(sym) + section_offset(symbol_section(sym))
+end
 
 # Symbol printing stuff
 """
@@ -161,7 +165,7 @@ function symbol_type_string(sym::COFFSymtabEntry)
     if isempty(type_string)
         string("Unknown Symbol Type (0x", string(sym.Type, base=16), ")")
     end
-    
+
     return type_string
 end
 @derefmethod symbol_type_string(s::COFFSymbolRef)

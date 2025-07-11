@@ -278,3 +278,23 @@ end
     @test "KERNEL32.dll" in dynamic_links
     @test "libstdc++-6.dll" in dynamic_links
 end
+
+using Mmap
+@testset "Finding dep_libs" begin
+    function find_dep_libs(file)
+        obj = only(readmeta(open(file, "r")))
+        syms = collect(Symbols(obj))
+        syms_names = symbol_name.(syms)
+        sym = syms[findfirst(syms_names .== mangle_symbol_name(obj, "dep_libs"))]
+        offset = symbol_offset(sym)
+        filem = Mmap.mmap(file)
+        data = String(filem[offset: (offset + 255)])
+        @test contains(data, "libjulia-internal")
+        @test contains(data, "libjulia-codegen")
+        @test contains(data, "libopenlibm")
+    end
+    for file in readdir("./libjulias")
+        find_dep_libs(joinpath("./libjulias", file))
+    end
+end
+
