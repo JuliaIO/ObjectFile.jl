@@ -47,7 +47,7 @@ function macho_header_type(magic::UInt32)
     elseif magic in (METALLIB_MAGIC,)
         return MetallibHeader{MachOHandle}
     else
-        throw(MagicMismatch("Invalid Magic ($(string(magic, base=16)))!"))
+        throw(MagicMismatch("Invalid Magic (0x$(string(magic, base=16, pad=8)))!"))
     end
 end
 
@@ -63,7 +63,7 @@ function macho_is64bit(magic::UInt32)
     elseif magic in (MH_MAGIC, MH_CIGAM, FAT_MAGIC, FAT_CIGAM, FAT_MAGIC_METAL, FAT_CIGAM_METAL, METALLIB_MAGIC)
         return false
     else
-        throw(MagicMismatch("Invalid Magic ($(string(magic, base=16)))!"))
+        throw(MagicMismatch("Invalid Magic (0x$(string(magic, base=16, pad=8)))!"))
     end
 end
 
@@ -79,7 +79,7 @@ function macho_endianness(magic::UInt32)
     elseif magic in (MH_MAGIC, MH_MAGIC_64, FAT_MAGIC, FAT_MAGIC_METAL, METALLIB_MAGIC)
         return :LittleEndian
     else
-        throw(MagicMismatch("Invalid Magic ($(string(magic, base=16)))!"))
+        throw(MagicMismatch("Invalid Magic (0x$(string(magic, base=16, pad=8)))!"))
     end
 end
 

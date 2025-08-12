@@ -12,6 +12,27 @@ using Test
     end
 end
 
+function check_magic_mismatch(path, HandleType)
+    err = try
+        readmeta(open(path, "r"), HandleType)
+    catch err
+        err
+    end
+
+    @test err isa MagicMismatch
+    if HandleType === ELFHandle
+        @test occursin(r"Magic Number 0x[a-f0-9]{8} does not match expected ELF magic number 0x7f454c46", repr(err))
+    elseif HandleType === COFFHandle
+        @test occursin(r"Magic Number 0x[a-f0-9]{8} does not match expected PE magic number 0x50450000", repr(err))
+    elseif HandleType === MachOHandle
+        @test occursin(r"Invalid Magic \(0x[a-f0-9]{8}\)\!", repr(err))
+    else
+        @assert false "unexpected handle type"
+    end
+
+    return nothing
+end
+
 function test_libfoo_and_fooifier(fooifier_path, libfoo_path)
     # Actually read it in
     oh_exe = only(readmeta(open(fooifier_path, "r")))
@@ -42,6 +63,12 @@ function test_libfoo_and_fooifier(fooifier_path, libfoo_path)
             for oh in (oh_exe, oh_lib)
                 # Test that we got the right type
                 @test typeof(oh) <: H
+
+                # Test that the wrong types all error as expected
+                for MismatchedType in (ELFHandle, COFFHandle, MachOHandle)
+                    H === MismatchedType && continue
+                    check_magic_mismatch(fooifier_path, MismatchedType)
+                end
 
                 # Test that we got the right number of bits
                 @test is64bit(oh) == (bits == "64")

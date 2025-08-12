@@ -38,8 +38,8 @@ function readmeta(io::IO, ::Type{H}) where {H <: ELFHandle}
     magic = [read(io, UInt8) for idx in 1:4]
     if any(magic .!= elven_magic)
         msg = """
-        Magic Number 0x$(join(string.(magic, base=16),"")) does not match expected ELF
-        magic number 0x$(join("", string.(elven_magic, base=16)))
+        Magic Number 0x$(join(string.(magic, base=16, pad=2),"")) does not match expected ELF
+        magic number 0x$(join(string.(elven_magic, base=16, pad=2),""))
         """
         throw(MagicMismatch(replace(strip(msg), "\n" => " ")))
     end
