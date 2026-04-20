@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         julia-version:
-          - "1.6"
+          - "min"
           - "1"
           - "nightly"
         os:
@@ -35,6 +35,8 @@ jobs:
         exclude:
           - os: macOS-latest
             julia-arch: x86
+          - os: macOS-latest
+            julia-version: "min"
 
     steps:
       - uses: actions/checkout@v6
