@@ -67,7 +67,7 @@ keys(h::FatMachOHandle) = 1:length(h)
 iterate(h::FatMachOHandle, idx=1) = idx > length(h) ? nothing : (h[idx], idx+1)
 lastindex(h::FatMachOHandle) = lastindex(h.header.archs)
 length(h::FatMachOHandle) = length(h.header.archs)
-eltype(::Type{S}) where {S <: FatMachOHandle} = MachOLoadCmdRef
+eltype(::Type{<:FatMachOHandle}) = MachOHandle
 function getindex(h::FatMachOHandle, idx)
     seek(h.io, h.start + h.header.archs[idx].offset)
     only(readmeta(h.io, MachOHandle))
