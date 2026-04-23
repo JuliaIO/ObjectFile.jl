@@ -217,6 +217,10 @@ function test_fat_libfoo(file)
     end
     @test ntotal == 2
     @test n64 == 1
+
+    handles = collect(ohs)
+    @test handles isa Vector{<:MachOHandle}
+    @test length(handles) == 2
 end
 
 function test_metal(file)
