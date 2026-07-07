@@ -145,6 +145,19 @@ function test_libfoo_and_fooifier(fooifier_path, libfoo_path)
                 @test isglobal(syms_exe[main_idx_exe])
                 @test isglobal(syms_lib[foo_idx_lib])
             end
+
+            if isa(oh_exe, ELFHandle)
+                sections = Sections(oh_exe)
+                dynsym = Symbols(only(findall(sections, ".dynsym")))
+                symtab = Symbols(only(findall(sections, ".symtab")))
+
+                @test section_name(Section(dynsym)) == ".dynsym"
+                @test section_number(Section(dynsym)) != section_number(Section(symtab))
+                @test section_number(Section(dynsym)) == section_number(Section(Symbols(dynsym[2])))
+                @test symbol_number(dynsym[2]) == 2
+                @test length(dynsym) <= length(symtab)
+                @test symbol_name(dynsym[2]) == "_ITM_deregisterTMCloneTable"
+            end
         end
 
         @testset "Printing" begin
@@ -324,4 +337,3 @@ using Mmap
         find_dep_libs(joinpath("./libjulias", file))
     end
 end
-
