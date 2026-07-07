@@ -50,6 +50,17 @@ function lastindex(syms::ELFSymbols{H}) where {H <: ELFHandle}
     return div(sect_size, sym_size)
 end
 
+function Base.getindex(syms::ELFSymbols{H}, idx) where {H <: ELFHandle}
+    return getindex_ref(
+        syms,
+        section_offset(Section(syms)),
+        sizeof(symtab_entry_type(syms)),
+        symtab_entry_type(syms),
+        SymbolRef,
+        idx,
+    )
+end
+
 
 # Add an StrTab() override to be able to load the symbol string table
 """
