@@ -59,7 +59,7 @@ function readmeta(io::IO,::Type{FatMachOHandle})
 
     # Unpack the header
     header = unpack(io, header_type, endianness)
-    return FatMachOHandle(io, start, header, path(io))
+    return FatMachOHandle(io, Int64(start), header, path(io))
 end
 
 # Iteration
