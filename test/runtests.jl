@@ -139,6 +139,15 @@ function test_libfoo_and_fooifier(fooifier_path, libfoo_path)
             @test !islocal(syms_exe[main_idx_exe])
             @test !islocal(syms_lib[foo_idx_lib])
 
+            # COFF symbols are followed by auxiliary records, which are skipped
+            if isa(oh_exe, COFFHandle)
+                for (oh, syms) in ((oh_exe, syms_exe), (oh_lib, syms_lib))
+                    naux = [ObjectFile.deref(sym).NumberOfAuxSymbols for sym in syms]
+                    @test length(syms) + sum(naux) == header(oh).NumberOfSymbols
+                    @test ObjectFile.symbol_number(syms[end]) + naux[end] == header(oh).NumberOfSymbols
+                end
+            end
+
             # Global detection doesn't seem to be working on OSX...
             if !isa(oh_exe, MachOHandle)
                 @test isglobal(syms_exe[foo_idx_exe])
