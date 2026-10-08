@@ -245,6 +245,7 @@ test_libfoo_and_fooifier("./linux64/fooifier", "./linux64/libfoo.so")
 # Run MachO tests
 test_libfoo_and_fooifier("./mac64/fooifier", "./mac64/libfoo.dylib")
 test_fat_libfoo("./mac64/libfoo_fat.dylib")
+test_fat_libfoo("./mac64/libfoo_fat64.dylib")
 test_metal("./macmetal/dummy")
 
 # Run COFF tests

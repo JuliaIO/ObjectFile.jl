@@ -11,8 +11,8 @@ abstract type MachOFatArchitecture end
 end
 
 @io struct MachOFatArch64 <: MachOFatArchitecture
-    cputype::UInt64
-    cpusubtype::UInt64
+    cputype::UInt32
+    cpusubtype::UInt32
     offset::UInt64
     size::UInt64
     align::UInt32

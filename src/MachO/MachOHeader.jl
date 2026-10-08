@@ -74,9 +74,9 @@ Given the `magic` field from a Mach-O file header, return the endianness of the
 Mach-O header.
 """
 function macho_endianness(magic::UInt32)
-    if magic in (MH_CIGAM, MH_CIGAM_64, FAT_CIGAM, FAT_CIGAM_METAL)
+    if magic in (MH_CIGAM, MH_CIGAM_64, FAT_CIGAM, FAT_CIGAM_64, FAT_CIGAM_METAL)
         return :BigEndian
-    elseif magic in (MH_MAGIC, MH_MAGIC_64, FAT_MAGIC, FAT_MAGIC_METAL, METALLIB_MAGIC)
+    elseif magic in (MH_MAGIC, MH_MAGIC_64, FAT_MAGIC, FAT_MAGIC_64, FAT_MAGIC_METAL, METALLIB_MAGIC)
         return :LittleEndian
     else
         throw(MagicMismatch("Invalid Magic (0x$(string(magic, base=16, pad=8)))!"))
