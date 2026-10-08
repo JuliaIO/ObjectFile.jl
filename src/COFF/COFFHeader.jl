@@ -16,6 +16,8 @@ function coff_header_is64bit(h::COFFHeader)
     wide_machines = [
         IMAGE_FILE_MACHINE_AMD64,
         IMAGE_FILE_MACHINE_ARM64,
+        IMAGE_FILE_MACHINE_ARM64EC,
+        IMAGE_FILE_MACHINE_ARM64X,
         IMAGE_FILE_MACHINE_IA64,
     ]
     return h.Machine in wide_machines
