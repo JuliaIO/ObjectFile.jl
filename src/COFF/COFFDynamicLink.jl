@@ -34,6 +34,11 @@ function find_section_for_rva(oh::H, rva) where {H <: COFFHandle}
 end
 
 function COFFDynamicLinks(oh::H) where {H <: COFFHandle}
+    # Object files are not loaded, and so have no import table
+    if oh.opt_header === nothing
+        return COFFDynamicLinks(oh, COFFDynamicLink{H}[])
+    end
+
     # Start by finding the virtual address of the import table
     import_table_rva = oh.opt_header.directories.ImportTable.VirtualAddress
 

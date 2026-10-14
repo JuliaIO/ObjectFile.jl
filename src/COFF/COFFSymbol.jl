@@ -5,61 +5,60 @@ export COFFSymbols, COFFSymtabEntry, COFFSymbolRef
 
 COFF symbol table, contains the list of symbols defined within the object file.
 
-Note that because COFF Symbols are variable-length, we store a table of offsets
-at which the (non-auxilliary) symbols can be found.
+Note that because COFF Symbols are followed by a variable number of auxiliary
+records within the symbol table, we store the (1-based) symbol table index at
+which each (non-auxiliary) symbol can be found.
 """
 struct COFFSymbols{H<:COFFHandle} <: Symbols{H}
     handle::H
-    symbol_offsets::Vector{UInt64}
+    symbol_indices::Vector{UInt32}
 end
 
 """
-    scan_symbol_offsets(oh::COFFHandle)
+    scan_symbol_indices(oh::COFFHandle)
 
-Find the offsets for each Symbol within a COFFHandle, skipping over auxilliary
-symbols as necessary.
+Find the symbol table index of each Symbol within a COFFHandle, skipping over
+auxiliary records as necessary.
 """
-function scan_symbol_offsets(oh::H) where {H <: COFFHandle}
-    # num_syms represents the number of total symbols, but we're only
+function scan_symbol_indices(oh::H) where {H <: COFFHandle}
+    # num_syms represents the number of total records, but we're only
     # interested in the non-auxiliary symbols
     num_syms = num_symbols(header(oh))
-    offsets = UInt64[]
+    indices = UInt32[]
 
-    curr_idx = 1
     idx = 1
-    while idx < num_syms
-        # Load in the next symbol and store its offset
+    while idx <= num_syms
+        # Load in the next symbol and store its index
         seek(oh, symtab_entry_offset(oh) + symtab_entry_size(oh)*(idx-1))
+        sym = unpack(oh, symtab_entry_type(oh))
+        push!(indices, idx)
 
-        sym = unpack(oh, COFFSymtabEntry{H})
-        push!(offsets, idx)
-
-        # Move our offset forward by 1 (because we just read in a SymtabEntry)
-        # and again as many times as needed to skip over the auxilliary symbols
+        # Move our index forward by 1 (because we just read in a SymtabEntry)
+        # and again as many times as needed to skip over the auxiliary records
         idx += 1 + sym.NumberOfAuxSymbols
-        curr_idx += 1
     end
 
-    return offsets
+    return indices
 end
 
 function Symbols(oh::H) where {H <: COFFHandle}
-    symbol_offsets = scan_symbol_offsets(oh)
-    return COFFSymbols(oh, symbol_offsets)
+    return COFFSymbols(oh, scan_symbol_indices(oh))
 end
 
 handle(syms::COFFSymbols) = syms.handle
-# function next(syms::COFFSymbols, idx)
-#     # We skip over auxiliary symbols here
-#     next_idx = idx + deref(syms[idx]).NumberOfAuxSymbols + 1
-#     return (syms[idx], next_idx)
-# end
-lastindex(syms::COFFSymbols) = num_symbols(header(handle(syms)))
+lastindex(syms::COFFSymbols) = length(syms.symbol_indices)
 
-# We override `iteratorsize` so that list comprehensions and collect() calls on
-# our Symbols don't have a bunch of #undef entries at the end of the array
-# because it tries to pre-allocate an array of the proper size.
-# iteratorsize(::Type{H}) where {H <: COFFSymbols} = SizeUnknown()
+# Index into the symbols, skipping over auxiliary records.  The resulting
+# `symbol_number()` is the symbol's index within the symbol table.
+function getindex(syms::COFFSymbols, idx)
+    if !(0 < idx <= length(syms))
+        throw(BoundsError(syms, idx))
+    end
+    oh = handle(syms)
+    table_idx = syms.symbol_indices[idx]
+    seek(oh, symtab_entry_offset(oh) + symtab_entry_size(oh)*(table_idx-1))
+    return SymbolRef(syms, unpack(oh, symtab_entry_type(oh)), table_idx)
+end
 
 @io struct COFFSymtabEntry{H <: COFFHandle} <: SymtabEntry{H}
     Name::fixed_string{UInt64}

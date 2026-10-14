@@ -6,6 +6,8 @@
     const IMAGE_FILE_MACHINE_ARM            = 0x1c0     #   ARM little endian
     const IMAGE_FILE_MACHINE_ARMNT          = 0x1c4     #   ARMv7 (or higher) Thumb mode only
     const IMAGE_FILE_MACHINE_ARM64          = 0xaa64    #  ARMv8 in 64-bit mode
+    const IMAGE_FILE_MACHINE_ARM64EC        = 0xa641    #  ARMv8 in 64-bit mode, with the x64 ABI
+    const IMAGE_FILE_MACHINE_ARM64X         = 0xa64e    #  ARM64 and ARM64EC code together
     const IMAGE_FILE_MACHINE_EBC            = 0xebc     #   EFI byte code
     const IMAGE_FILE_MACHINE_I386           = 0x14c     #   Intel 386 or later processors and compatible processors
     const IMAGE_FILE_MACHINE_IA64           = 0x200     #   Intel Itanium processor family
@@ -31,7 +33,7 @@ function coff_machine_to_arch(machine::UInt16)
         return "x86_64"
     elseif machine ∈ (IMAGE_FILE_MACHINE_ARM, IMAGE_FILE_MACHINE_ARMNT, IMAGE_FILE_MACHINE_THUMB)
         return "armv7l"
-    elseif machine ∈ (IMAGE_FILE_MACHINE_ARM64,)
+    elseif machine ∈ (IMAGE_FILE_MACHINE_ARM64, IMAGE_FILE_MACHINE_ARM64EC, IMAGE_FILE_MACHINE_ARM64X)
         return "aarch64"
     elseif machine ∈ (IMAGE_FILE_MACHINE_POWERPC,)
         return "ppc64le"
