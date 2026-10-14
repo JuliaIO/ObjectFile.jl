@@ -21,6 +21,10 @@ include("MachO/MachO.jl")
 include("COFF/COFF.jl")
 @reexport using .COFF
 
+# Include static archives (`ar`), which hold object files of the above formats
+include("Archive/Archive.jl")
+@reexport using .Archive
+
 function __init__()
     global ObjTypes
 
@@ -28,6 +32,8 @@ function __init__()
     push!(ObjTypes, MachOHandle)
     push!(ObjTypes, FatMachOHandle)
     push!(ObjTypes, COFFHandle)
+    # `ArchiveHandle` is deliberately not registered: `readmeta(io)` returns
+    # object files, and an archive is a collection of them.
 end
 
 end #module ObjectFile
