@@ -259,6 +259,38 @@ test_fat_libfoo("./mac64/libfoo_fat64.dylib")
 test_fat_libfoo(IOBuffer(read("./mac64/libfoo_fat64.dylib")))
 test_metal("./macmetal/dummy")
 
+@testset "MachO minimum OS version" begin
+    # LC_VERSION_MIN_MACOSX
+    let oh = only(readmeta(open("./mac64/libfoo.dylib", "r")))
+        @test min_os_version(oh) == v"10.8.0"
+        @test sdk_version(oh) == v"10.10.0"
+        @test build_platform(oh) == MachO.PLATFORM_MACOS
+        cmds = MachO.findall(MachOLoadCmds(oh), MachOVersionMinCmd)
+        @test length(cmds) == 1
+        @test min_os_version(only(cmds)) == v"10.8.0"
+        @test sdk_version(only(cmds)) == v"10.10.0"
+        @test build_platform(only(cmds)) == MachO.PLATFORM_MACOS
+        @test sprint(show, deref(only(cmds))) == "VersionMinCmd: MACOS 10.8.0 (SDK 10.10.0)"
+    end
+
+    # Each slice of a fat binary carries its own version command
+    for oh in readmeta(open("./macfat/libfoo.dylib", "r"))
+        @test min_os_version(oh) == v"10.12.0"
+    end
+
+    # LC_BUILD_VERSION
+    let oh = only(readmeta(open("./libjulias/libjulia.1.10.10.dylib", "r")))
+        @test min_os_version(oh) == v"11.0.0"
+        @test sdk_version(oh) == v"13.3.0"
+        @test build_platform(oh) == MachO.PLATFORM_MACOS
+        cmd = only(MachO.findall(MachOLoadCmds(oh), MachOBuildVersionCmd))
+        @test min_os_version(cmd) == v"11.0.0"
+        @test sdk_version(cmd) == v"13.3.0"
+        @test build_platform(cmd) == MachO.PLATFORM_MACOS
+        @test sprint(show, deref(cmd)) == "BuildVersionCmd: MACOS 11.0.0 (SDK 13.3.0)"
+    end
+end
+
 # Run COFF tests
 test_libfoo_and_fooifier("./win32/fooifier.exe", "./win32/libfoo.dll")
 test_libfoo_and_fooifier("./win64/fooifier.exe", "./win64/libfoo.dll")
