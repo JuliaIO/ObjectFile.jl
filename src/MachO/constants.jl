@@ -217,7 +217,27 @@ const LC_REQ_DYLD = 0x80000000
     const LC_DYLIB_CODE_SIGN_DRS    = 0x2B # Code signing DRs copied from linked dylibs
     const LC_ENCRYPTION_INFO_64     = 0x2C # 64-bit encrypted segment information
     const LC_LINKER_OPTION          = 0x2D # linker options in MH_OBJECT files
+    const LC_LINKER_OPTIMIZATION_HINT = 0x2E # optimization hints in MH_OBJECT files
+    const LC_VERSION_MIN_TVOS       = 0x2F # build for AppleTV min OS version
+    const LC_VERSION_MIN_WATCHOS    = 0x30 # build for Watch min OS version
+    const LC_NOTE                   = 0x31 # arbitrary data included within a Mach-O file
+    const LC_BUILD_VERSION          = 0x32 # build for platform min OS version
+end
 
+# Platform identifiers stored in `LC_BUILD_VERSION` load commands
+@constants PLATFORMS "PLATFORM_" begin
+    const PLATFORM_MACOS                = 1
+    const PLATFORM_IOS                  = 2
+    const PLATFORM_TVOS                 = 3
+    const PLATFORM_WATCHOS              = 4
+    const PLATFORM_BRIDGEOS             = 5
+    const PLATFORM_MACCATALYST          = 6
+    const PLATFORM_IOSSIMULATOR         = 7
+    const PLATFORM_TVOSSIMULATOR        = 8
+    const PLATFORM_WATCHOSSIMULATOR     = 9
+    const PLATFORM_DRIVERKIT            = 10
+    const PLATFORM_VISIONOS             = 11
+    const PLATFORM_VISIONOSSIMULATOR    = 12
 end
 
 

@@ -97,6 +97,7 @@ include("LoadCmds/UnknownCmd.jl")
 include("LoadCmds/DylibCmds.jl")
 include("LoadCmds/SegmentCmds.jl")
 include("LoadCmds/SymtabCmds.jl")
+include("LoadCmds/VersionCmds.jl")
 
 function show(io::IO, cmd::MachOLoadCmd)
     print(io, "MachOLoadCmd")
@@ -187,6 +188,11 @@ function load_cmd_type(header::MachOLoadCmdHeader{H}) where {H <: MachOHandle}
         LC_ID_DYLIB => MachOIdDylibCmd{H},
         LC_RPATH => MachORPathCmd{H},
         LC_SYMTAB => MachOSymtabCmd{H},
+        LC_VERSION_MIN_MACOSX => MachOVersionMinCmd{H},
+        LC_VERSION_MIN_IPHONEOS => MachOVersionMinCmd{H},
+        LC_VERSION_MIN_TVOS => MachOVersionMinCmd{H},
+        LC_VERSION_MIN_WATCHOS => MachOVersionMinCmd{H},
+        LC_BUILD_VERSION => MachOBuildVersionCmd{H},
     )
 
     # We drop LC_REQ_DYLD from the flags because we don't care
