@@ -11,17 +11,23 @@ import Base: getindex, show
 
 ELF dynamic linkage table, contains the list dynamic loader commands, see the
 `ELFDynEntry` type for an opaque and unhelpful detailing of these commands.
+`section_ref` is `nothing` for objects without a `.dynamic` section (e.g.
+relocatable `.o` files), in which case `links` is empty.
 """
 struct ELFDynamicLinks{H <: ELFHandle} <: DynamicLinks{H}
-    section_ref::SectionRef{H}
+    section_ref::Union{Nothing,SectionRef{H}}
     links::Vector
+    handle::H
 end
+ELFDynamicLinks(section_ref::SectionRef, links::Vector) =
+    ELFDynamicLinks(section_ref, links, handle(section_ref))
 
 """
     DynamicLinks(oh::ELFHandle)
 
 Return the `ELFDynamicLinks` object that is contained within the first
-`.dynamic` section within the ELF object.
+`.dynamic` section within the ELF object.  If there is no `.dynamic` section,
+the result is empty.
 """
 function DynamicLinks(oh::ELFHandle)
     sections = Sections(oh)
@@ -29,7 +35,7 @@ function DynamicLinks(oh::ELFHandle)
 
     # Create half-initialized `DynamicLinks` object, so we have it around to
     # pass to the `DynamicLink()` constructor below
-    dls = ELFDynamicLinks(dyn_section, DynamicLink[])
+    dls = ELFDynamicLinks(dyn_section, DynamicLink[], oh)
 
     # Find all our DT_NEEDED DynEntries
     des = ELFDynEntries(oh, [DT_NEEDED])
@@ -44,7 +50,7 @@ function DynamicLinks(oh::ELFHandle)
     return dls
 end
 Section(dls::ELFDynamicLinks) = dls.section_ref
-handle(dls::ELFDynamicLinks) = handle(Section(dls))
+handle(dls::ELFDynamicLinks) = dls.handle
 lastindex(dls::ELFDynamicLinks) = lastindex(dls.links)
 getindex(dls::ELFDynamicLinks, idx) = getindex(dls.links, idx)
 
@@ -55,6 +61,9 @@ Given an ELF `DynamicLinks` container, construct an `ELFStrTab` that refers to
 the associated dynamic string table.
 """
 function StrTab(dls::ELFDynamicLinks{H}) where {H <: ELFHandle}
+    if Section(dls) === nothing
+        error("$(path(handle(dls))) has no .dynamic section")
+    end
     # The `sh_link` field in a ".dynamic" section always points to the
     # dynamic string table (usually called ".dynstr")
     section_idx = deref(Section(dls)).sh_link+1
@@ -85,18 +94,23 @@ end
 """
     ELFRPath
 
-Stores the RPath entries from an ELF object
+Stores the RPath entries from an ELF object.  `section_ref` is `nothing` for
+objects without a `.dynamic` section, in which case `rpath` is empty.
 """
 struct ELFRPath{H <: ELFHandle} <: RPath{H}
-    section_ref::SectionRef{H}
+    section_ref::Union{Nothing,SectionRef{H}}
     rpath::Vector{<:AbstractString}
+    handle::H
 end
+ELFRPath(section_ref::SectionRef, rpath::Vector{<:AbstractString}) =
+    ELFRPath(section_ref, rpath, handle(section_ref))
 
 """
     RPath(oh::ELFHandle)
 
 Return the `ELFRPath` object that is contained within the first `.dynamic`
-section within the ELF object.
+section within the ELF object.  If there is no `.dynamic` section, the result
+is empty.
 """
 function RPath(oh::ELFHandle)
     sections = Sections(oh)
@@ -115,9 +129,9 @@ function RPath(oh::ELFHandle)
     end
 
     # Return our RPath object
-    return ELFRPath(dyn_section, paths)
+    return ELFRPath(dyn_section, paths, oh)
 end
 
 Section(rpath::ELFRPath) = rpath.section_ref
-handle(rpath::ELFRPath) = handle(Section(rpath))
+handle(rpath::ELFRPath) = rpath.handle
 rpaths(rpath::ELFRPath) = rpath.rpath

@@ -124,8 +124,9 @@ function ELFDynEntries(oh::ELFHandle)
     # Figure out what kind of DynEntry objects we're going to read in
     DT = dyn_entry_type(oh)
 
-    # Split-debuginfo files keep the `.dynamic` header, but not its contents
-    if !isnothing(dyn_section) && !section_has_contents(dyn_section)
+    # Relocatable objects have no `.dynamic` section, and split-debuginfo
+    # files keep its header but not its contents
+    if isnothing(dyn_section) || !section_has_contents(dyn_section)
         return ELFDynEntryRef{typeof(oh)}[]
     end
 

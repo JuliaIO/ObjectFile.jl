@@ -463,6 +463,42 @@ end
     end
 end
 
+# A relocatable object has no `.dynamic` section (and no other dynamic-linking
+# sections or program headers), so its dynamic linkage info is empty.
+@testset "ELF relocatable object" begin
+    using ObjectFile.ELF
+
+    readmeta("./elfobj/foo.o") do ohs
+        oh = only(ohs)
+        @test oh isa ELFHandle
+        @test isrelocatable(oh)
+        @test !isdynamic(oh)
+        @test findfirst(Sections(oh), ".dynamic") === nothing
+
+        @test isempty(ELF.ELFDynEntries(oh))
+        dls = DynamicLinks(oh)
+        @test isempty(dls)
+        @test isempty(path.(dls))
+        @test Section(dls) === nothing
+        @test handle(dls) === oh
+        @test_throws ErrorException StrTab(dls)
+        rpath = RPath(oh)
+        @test isempty(rpaths(rpath))
+        @test isempty(canonical_rpaths(rpath))
+        @test Section(rpath) === nothing
+        @test handle(rpath) === oh
+        @test isempty(find_libraries(oh))
+        @test sprint(show, dls) == "ELF DynamicLinks"
+        @test sprint(show, rpath) == "ELF RPath"
+
+        @test isempty(ELFVersionData(oh))
+        @test isempty(ELFVersionNeededData(oh))
+        @test isempty(Segments(oh))
+        @test "foo" in symbol_name.(Symbols(oh))
+        @test "bar" in symbol_name.(Symbols(oh))
+    end
+end
+
 # Ensure that these tricksy win32 files work
 @testset "git win32 problems" begin
     # Test that 6a66694a8dd5ca85bd96fe6236f21d5b183e7de6 fix worked
