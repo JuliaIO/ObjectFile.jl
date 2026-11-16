@@ -339,6 +339,60 @@ test_libfoo_and_fooifier("./win64/fooifier.exe", "./win64/libfoo.dll")
         end
     end
 
+    # `test/splitdebug/libfoo.so` defines `FOO_1.0` and needs `GLIBC_*` from libc
+    readmeta("./splitdebug/libfoo.so") do ohs
+        oh = only(ohs)
+        verdefs = ELFVersionData(oh)
+        foreach(check_verdef, verdefs)
+        @test "FOO_1.0" in vcat((x -> x.names).(verdefs)...)
+        verneeds = ELFVersionNeededData(oh)
+        foreach(check_verneed, verneeds)
+        @test length(verneeds) == 1
+        @test all(startswith("GLIBC_"), only(verneeds).names)
+    end
+end
+
+# `objcopy --only-keep-debug` turns the loadable sections into `SHT_NOBITS`:
+# their headers stay, but their contents are gone, so there is nothing to read.
+@testset "ELF split debuginfo" begin
+    using ObjectFile.ELF
+
+    readmeta("./splitdebug/libfoo.so") do ohs
+        oh = only(ohs)
+        sections = Sections(oh)
+        for name in (".dynamic", ".dynsym", ".dynstr", ".gnu.version_d", ".gnu.version_r")
+            @test section_has_contents(findfirst(sections, name))
+        end
+        @test !section_has_contents(findfirst(sections, ".bss"))
+        @test !isempty(ELFVersionData(oh))
+        @test !isempty(ELFVersionNeededData(oh))
+        @test !isempty(ELF.ELFDynEntries(oh))
+        @test path.(DynamicLinks(oh)) == ["libc.so.6"]
+        @test !isempty(Symbols(only(findall(sections, ".dynsym"))))
+    end
+
+    readmeta("./splitdebug/libfoo.so.debug") do ohs
+        oh = only(ohs)
+        sections = Sections(oh)
+        for name in (".dynamic", ".dynsym", ".dynstr", ".gnu.version_d", ".gnu.version_r")
+            s = findfirst(sections, name)
+            @test section_type(s) == ELF.SHT_NOBITS
+            @test !section_has_contents(s)
+        end
+        @test section_has_contents(findfirst(sections, ".symtab"))
+
+        @test isempty(ELFVersionData(oh))
+        @test isempty(ELFVersionNeededData(oh))
+        @test isempty(ELF.ELFDynEntries(oh))
+        @test isempty(DynamicLinks(oh))
+        @test isempty(rpaths(RPath(oh)))
+        @test isempty(Symbols(only(findall(sections, ".dynsym"))))
+
+        # `.symtab` is debug info, so it is kept, and still readable
+        syms = Symbols(oh)
+        @test Section(syms) == findfirst(sections, ".symtab")
+        @test "foo" in symbol_name.(syms)
+    end
 end
 
 # Ensure that these tricksy win32 files work

@@ -45,6 +45,9 @@ handle(syms::ELFSymbols) = handle(Section(syms))
 symtab_entry_type(syms::ELFSymbols) = symtab_entry_type(handle(syms))
 
 function lastindex(syms::ELFSymbols{H}) where {H <: ELFHandle}
+    # A `SHT_NOBITS` symbol table (e.g. `.dynsym` in a split-debuginfo file)
+    # has no entries in the file
+    section_has_contents(Section(syms)) || return 0
     sect_size = section_size(Section(syms))
     sym_size = sizeof(symtab_entry_type(syms))
     return div(sect_size, sym_size)

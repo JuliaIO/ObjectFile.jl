@@ -1,7 +1,7 @@
 export ELFSections, ELFSection, ELFSection32, ELFSection64, ELFSectionRef
 
 # Export certain extensions to the base API
-export section_type
+export section_type, section_has_contents
 
 """
     ELFSections
@@ -65,6 +65,18 @@ section_size(s::ELFSection) = s.sh_size
 section_offset(s::ELFSection) = s.sh_offset
 section_address(s::ELFSection) = s.sh_addr
 
+"""
+    section_has_contents(s::ELFSection)
+
+Return `false` if the given section occupies no space in the file (its type is
+`SHT_NOBITS`), so its `sh_offset`/`sh_size` don't describe any bytes that can be
+read.  Besides `.bss`, this covers the loadable sections (`.dynamic`,
+`.dynsym`, `.dynstr`, `.gnu.version_r`, ...) of a split-debuginfo file such as
+one made by `objcopy --only-keep-debug`, which keeps their headers but not
+their contents.
+"""
+section_has_contents(s::ELFSection) = section_type(s) != SHT_NOBITS
+
 
 
 """
@@ -86,6 +98,7 @@ sections(s::ELFSectionRef) = s.sections
 handle(s::ELFSectionRef) = handle(sections(s))
 section_number(s::ELFSectionRef) = s.idx
 @derefmethod section_type(s::ELFSectionRef)
+@derefmethod section_has_contents(s::ELFSectionRef)
 
 function section_name(section::ELFSectionRef)
     # Actually do the strtab lookup to get the name of this guy

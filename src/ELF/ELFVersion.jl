@@ -53,8 +53,11 @@ parent version (e.g. `names = ["GLIBCXX_3.4.7", "GLIBCXX_3.4.6"]`)
 """
 function ELFVersionData(oh::H) where {H <: ELFHandle}
     s = findfirst(Sections(oh), ".gnu.version_d")
-    strtab = StrTab(findfirst(Sections(oh), ".dynstr"))
-    (isnothing(s) || isnothing(strtab)) && return ELFVersionEntry[]
+    dynstr = findfirst(Sections(oh), ".dynstr")
+    (isnothing(s) || isnothing(dynstr)) && return ELFVersionEntry[]
+    # Split-debuginfo files keep these section headers, but not their contents
+    (section_has_contents(s) && section_has_contents(dynstr)) || return ELFVersionEntry[]
+    strtab = StrTab(dynstr)
 
     # Queue oh up to the beginning of this section
     seek(oh, section_offset(s))
@@ -95,8 +98,11 @@ corresponds to a version.
 """
 function ELFVersionNeededData(oh::H) where {H <: ELFHandle}
     s = findfirst(Sections(oh), ".gnu.version_r")
-    strtab = StrTab(findfirst(Sections(oh), ".dynstr"))
-    (isnothing(s) || isnothing(strtab)) && return ELFVersionNeededEntry[]
+    dynstr = findfirst(Sections(oh), ".dynstr")
+    (isnothing(s) || isnothing(dynstr)) && return ELFVersionNeededEntry[]
+    # Split-debuginfo files keep these section headers, but not their contents
+    (section_has_contents(s) && section_has_contents(dynstr)) || return ELFVersionNeededEntry[]
+    strtab = StrTab(dynstr)
 
     seek(oh, section_offset(s))
     verneeds = ELFVersionNeededEntry[]

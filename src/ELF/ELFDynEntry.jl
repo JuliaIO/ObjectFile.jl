@@ -124,6 +124,11 @@ function ELFDynEntries(oh::ELFHandle)
     # Figure out what kind of DynEntry objects we're going to read in
     DT = dyn_entry_type(oh)
 
+    # Split-debuginfo files keep the `.dynamic` header, but not its contents
+    if !isnothing(dyn_section) && !section_has_contents(dyn_section)
+        return ELFDynEntryRef{typeof(oh)}[]
+    end
+
     # Seek to the proper spot, and read 'em in until we reach a DT_NULL
     seekstart(dyn_section)
     dts = [ELFDynEntryRef(dyn_section, unpack(oh, DT))]
