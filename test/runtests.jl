@@ -352,6 +352,64 @@ test_libfoo_and_fooifier("./win64/fooifier.exe", "./win64/libfoo.dll")
     end
 end
 
+# Corrupt the version sections of `test/splitdebug/libfoo.so` in memory, and
+# check that the version readers stop at the section bounds.
+@testset "ELF version sections out of bounds" begin
+    using ObjectFile.ELF
+
+    data = read("./splitdebug/libfoo.so")
+    load(data) = only(readmeta(IOBuffer(data)))
+
+    # Find a section's header and its contents in `data` (0-based offsets)
+    oh = load(data)
+    @test is64bit(oh) && endianness(oh) == :LittleEndian
+    function section_info(name)
+        s = findfirst(Sections(oh), name)
+        hdr = header(oh).e_shoff + (section_number(s) - 1) * header(oh).e_shentsize
+        return hdr, Int(section_offset(s)), Int(section_size(s))
+    end
+    # `Elf64_Shdr.sh_size` is at byte 32 of the section header
+    function with_size(name, size)
+        hdr, _, _ = section_info(name)
+        d = copy(data)
+        d[hdr+33:hdr+40] = reinterpret(UInt8, [UInt64(size)])
+        return d
+    end
+    function with_u32(name, field_offset, value)
+        _, off, _ = section_info(name)
+        d = copy(data)
+        d[off+field_offset+1:off+field_offset+4] = reinterpret(UInt8, [UInt32(value)])
+        return d
+    end
+
+    # Sanity-check the layout these patches assume
+    @test length(ELFVersionNeededData(oh)) == 1
+    vn = only(ELFVersionNeededData(oh)).ver_need
+    @test vn.vn_aux == 16 && vn.vn_next == 0
+    @test strtab_lookup(StrTab(findfirst(Sections(oh), ".dynstr")), vn.vn_file) == "libc.so.6"
+    _, _, verneed_size = section_info(".gnu.version_r")
+    _, _, verdef_size = section_info(".gnu.version_d")
+    _, _, dynstr_size = section_info(".dynstr")
+
+    # Zero-length sections hold no entries
+    @test isempty(ELFVersionNeededData(load(with_size(".gnu.version_r", 0))))
+    @test isempty(ELFVersionData(load(with_size(".gnu.version_d", 0))))
+
+    # Truncated sections: shorter than one entry, or cutting off the last aux
+    @test_throws ErrorException ELFVersionNeededData(load(with_size(".gnu.version_r", 8)))
+    @test_throws ErrorException ELFVersionNeededData(load(with_size(".gnu.version_r", verneed_size - 1)))
+    @test_throws ErrorException ELFVersionData(load(with_size(".gnu.version_d", 8)))
+    @test_throws ErrorException ELFVersionData(load(with_size(".gnu.version_d", verdef_size - 1)))
+
+    # `vn_next` (byte 12) or `vn_aux` (byte 8) pointing past the end
+    @test_throws ErrorException ELFVersionNeededData(load(with_u32(".gnu.version_r", 12, verneed_size)))
+    @test_throws ErrorException ELFVersionNeededData(load(with_u32(".gnu.version_r", 8, 0x7fffffff)))
+    # `vna_name` (byte 8 of the aux) pointing outside of `.dynstr`
+    @test_throws ErrorException ELFVersionNeededData(load(with_u32(".gnu.version_r", vn.vn_aux + 8, dynstr_size)))
+    # `vd_next` (byte 16) pointing past the end
+    @test_throws ErrorException ELFVersionData(load(with_u32(".gnu.version_d", 16, verdef_size)))
+end
+
 # `objcopy --only-keep-debug` turns the loadable sections into `SHT_NOBITS`:
 # their headers stay, but their contents are gone, so there is nothing to read.
 @testset "ELF split debuginfo" begin
