@@ -349,6 +349,7 @@ test_libfoo_and_fooifier("./win64/fooifier.exe", "./win64/libfoo.dll")
         foreach(check_verneed, verneeds)
         @test length(verneeds) == 1
         @test all(startswith("GLIBC_"), only(verneeds).names)
+        @test strtab_lookup(StrTab(findfirst(Sections(oh), ".dynstr")), only(verneeds).ver_need.vn_file) == "libc.so.6"
     end
 end
 

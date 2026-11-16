@@ -19,7 +19,7 @@ end
 @io struct ELFVerNeed{H <: ELFHandle}
     vn_version::UInt16
     vn_cnt::UInt16
-    vn_file::UInt16
+    vn_file::UInt32
     vn_aux::UInt32
     vn_next::UInt32
 end
