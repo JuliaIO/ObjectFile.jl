@@ -259,6 +259,15 @@ test_fat_libfoo("./mac64/libfoo_fat64.dylib")
 test_fat_libfoo(IOBuffer(read("./mac64/libfoo_fat64.dylib")))
 test_metal("./macmetal/dummy")
 
+@testset "MachO object without dylib dependencies" begin
+    oh = only(readmeta(open("./macobj/foo.o", "r")))
+    @test oh isa MachOHandle
+    @test isrelocatable(oh)
+    @test isempty(DynamicLinks(oh))
+    @test isempty(path.(DynamicLinks(oh)))
+    @test isempty(rpaths(RPath(oh)))
+end
+
 @testset "MachO minimum OS version" begin
     # LC_VERSION_MIN_MACOSX
     let oh = only(readmeta(open("./mac64/libfoo.dylib", "r")))
