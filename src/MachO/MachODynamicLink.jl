@@ -5,8 +5,8 @@ struct MachODynamicLinks{H <: MachOHandle, C <: MachOLoadCmdRef{H,MachOLoadDylib
     cmds::Vector{C}
 end
 
-function MachODynamicLinks(lcs::MachOLoadCmds)
-    ld_cmds = findall(lcs, [MachOLoadDylibCmd])
+function MachODynamicLinks(lcs::MachOLoadCmds{H}) where {H <: MachOHandle}
+    ld_cmds = MachOLoadCmdRef{H,MachOLoadDylibCmd{H}}[c for c in findall(lcs, [MachOLoadDylibCmd])]
     return MachODynamicLinks(handle(lcs), ld_cmds)
 end
 MachODynamicLinks(oh::MachOHandle) = MachODynamicLinks(MachOLoadCmds(oh))
